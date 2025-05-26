@@ -1,101 +1,203 @@
 // src/components/ContactFilters.jsx
 import React from 'react';
+import { motion } from 'framer-motion';
+import { Search, Filter, User, MapPin, Building, X } from 'lucide-react';
 
 const ContactFilters = ({
   filterValues,
   onFilterChange,
   searchTerm,
   onSearchChange,
-  // Estilos definidos como defaultProps abaixo para manter o corpo do componente mais limpo
-  formStyle,
-  filterGroupStyle,
-  individualFilterStyle,
-  labelStyle,
-  inputStyle,
-  searchContainerStyle
 }) => {
-
   const handleFilterInputChange = (event) => {
     const { name, value } = event.target;
     onFilterChange(name, value);
   };
 
+  const removeFilter = (filterName) => {
+    onFilterChange(filterName, '');
+  };
+
+  const removeSearchTerm = () => {
+    onSearchChange({ target: { value: '' } });
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { opacity: 1, x: 0 }
+  };
+
   return (
-    <div style={formStyle}>
-      <h3 style={{ marginTop: '0', marginBottom: '20px', color: '#007bff', textAlign: 'left', fontSize: '1.2em', borderBottom: '1px solid #e0e0e0', paddingBottom: '10px' }}>
-        Refinar Lista:
-      </h3>
-      
-      {/* Filtros Estruturados */}
-      <div style={{ marginBottom: '15px' }}>
-        <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#555', fontSize: '1em' }}>Filtros Específicos:</div>
-        <div style={filterGroupStyle}>
-          <div style={individualFilterStyle}>
-            <label htmlFor="filterUser" style={labelStyle}>Por Nome de Usuário:</label>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="filters-section"
+    >
+      {/* Seção de Busca Rápida */}
+      <motion.div variants={itemVariants} className="search-section">
+        <h3 className="section-title">
+          <Search size={20} />
+          Busca Rápida
+        </h3>
+        
+        <div className="form-group">
+          <label htmlFor="searchTerm" className="form-label">
+            Buscar por nome de exibição
+          </label>
+          <div className="input-with-icon">
+            <input
+              type="text"
+              id="searchTerm"
+              name="searchTerm"
+              className="form-input"
+              value={searchTerm}
+              onChange={onSearchChange}
+              placeholder="Digite parte do nome..."
+            />
+            <div className="input-icon">
+              <Search size={16} />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Seção de Filtros Específicos */}
+      <motion.div variants={itemVariants}>
+        <h3 className="section-title">
+          <Filter size={20} />
+          Filtros Específicos
+        </h3>
+        
+        <div className="filters-grid">
+          <div className="form-group">
+            <label htmlFor="filterUser" className="form-label">
+              <User size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+              Nome de Usuário
+            </label>
             <input
               type="text"
               id="filterUser"
               name="user"
+              className="form-input"
               value={filterValues.user}
               onChange={handleFilterInputChange}
-              style={inputStyle}
               placeholder="Filtrar por usuário..."
             />
           </div>
-          <div style={individualFilterStyle}>
-            <label htmlFor="filterCity" style={labelStyle}>Por Cidade:</label>
+
+          <div className="form-group">
+            <label htmlFor="filterCity" className="form-label">
+              <Building size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+              Cidade
+            </label>
             <input
               type="text"
               id="filterCity"
               name="city"
+              className="form-input"
               value={filterValues.city}
               onChange={handleFilterInputChange}
-              style={inputStyle}
               placeholder="Filtrar por cidade..."
             />
           </div>
-          <div style={individualFilterStyle}>
-            <label htmlFor="filterState" style={labelStyle}>Por Estado (UF):</label>
+
+          <div className="form-group">
+            <label htmlFor="filterState" className="form-label">
+              <MapPin size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+              Estado (UF)
+            </label>
             <input
               type="text"
               id="filterState"
               name="state"
+              className="form-input"
               value={filterValues.state}
               onChange={handleFilterInputChange}
-              style={inputStyle}
-              placeholder="Filtrar por UF..."
+              placeholder="Ex: SP, RJ, MG..."
+              maxLength="2"
             />
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Campo de Busca */}
-      <div style={searchContainerStyle}>
-        <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#555', fontSize: '1em' }}>Busca Rápida:</div>
-        <div style={individualFilterStyle}> {/* Reutilizando o estilo para consistência */}
-          <label htmlFor="searchTerm" style={labelStyle}>Buscar por Nome de Exibição:</label>
-          <input
-            type="text"
-            id="searchTerm"
-            name="searchTerm"
-            value={searchTerm}
-            onChange={onSearchChange} // Chama diretamente a função onSearchChange do App.jsx
-            style={inputStyle}
-            placeholder="Digite parte do nome de exibição..."
-          />
-        </div>
-      </div>
-    </div>
+      {/* Indicador de Filtros Ativos */}
+      {(filterValues.user || filterValues.city || filterValues.state || searchTerm) && (
+        <motion.div 
+          variants={itemVariants}
+          className="active-filters"
+        >
+          <div className="active-filters-title">Filtros ativos:</div>
+          <div className="active-filters-list">
+            {searchTerm && (
+              <span className="filter-tag">
+                Busca: "{searchTerm}"
+                <button
+                  className="filter-tag-remove"
+                  onClick={removeSearchTerm}
+                  title="Remover busca"
+                  aria-label="Remover busca"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filterValues.user && (
+              <span className="filter-tag">
+                Usuário: "{filterValues.user}"
+                <button
+                  className="filter-tag-remove"
+                  onClick={() => removeFilter('user')}
+                  title="Remover filtro de usuário"
+                  aria-label="Remover filtro de usuário"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filterValues.city && (
+              <span className="filter-tag">
+                Cidade: "{filterValues.city}"
+                <button
+                  className="filter-tag-remove"
+                  onClick={() => removeFilter('city')}
+                  title="Remover filtro de cidade"
+                  aria-label="Remover filtro de cidade"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filterValues.state && (
+              <span className="filter-tag">
+                Estado: "{filterValues.state}"
+                <button
+                  className="filter-tag-remove"
+                  onClick={() => removeFilter('state')}
+                  title="Remover filtro de estado"
+                  aria-label="Remover filtro de estado"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
   );
-};
-
-ContactFilters.defaultProps = {
-  formStyle: { display: 'flex', flexDirection: 'column', gap: '10px', padding: '20px', marginBottom: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: '#fdfdfd', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
-  filterGroupStyle: { display: 'flex', flexWrap: 'wrap', gap: '15px', alignItems: 'flex-end' },
-  individualFilterStyle: { display: 'flex', flexDirection: 'column', gap: '5px', flex: '1', minWidth: '180px' },
-  labelStyle: { fontWeight: '500', fontSize: '0.9em', color: '#333', marginBottom: '3px' },
-  inputStyle: { padding: '10px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '0.95em', boxSizing: 'border-box' },
-  searchContainerStyle: { marginTop: '15px', borderTop: '1px dashed #d0d0d0', paddingTop: '15px' },
 };
 
 export default ContactFilters;

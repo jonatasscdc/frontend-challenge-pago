@@ -1,23 +1,42 @@
 // src/components/Header.jsx
 import React from 'react';
+import { motion } from 'framer-motion';
+import { Users, Sparkles } from 'lucide-react';
 
-const Header = ({ title, subtitle, headerStyles }) => {
-  // Estilos padrão que queremos manter
-  const defaultStyles = {
-    backgroundColor: '#f0f0f0',
-    padding: '10px 20px',
-    textAlign: 'center',
-    marginBottom: '20px'
-  };
-
+const Header = ({ title, subtitle }) => {
   return (
-    // Mesclamos os estilos padrão com os headerStyles passados via props.
-    // Se headerStyles tiver uma propriedade em comum com defaultStyles,
-    // a de headerStyles (que vem depois) prevalecerá.
-    <header style={{ ...defaultStyles, ...headerStyles }}>
-      <h1>{title}</h1>
-      {subtitle && <h2>{subtitle}</h2>} {/* Corrigi 'subtitles' para 'subtitle' aqui também */}
-    </header>
+    <motion.header 
+      className="modern-header"
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+    >
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+        style={{ marginBottom: '1rem' }}
+      >
+        <Users size={48} style={{ color: '#ffffff' }} />
+      </motion.div>
+      
+      <motion.h1
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.8 }}
+      >
+        {title}
+      </motion.h1>
+      
+      <motion.p
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.8 }}
+      >
+        <Sparkles size={16} style={{ display: 'inline', marginRight: '0.5rem', color: '#ffffff' }} />
+        {subtitle}
+      </motion.p>
+    </motion.header>
   );
 };
 

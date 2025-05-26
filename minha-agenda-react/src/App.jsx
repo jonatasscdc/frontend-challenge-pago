@@ -1,13 +1,17 @@
 // src/App.jsx
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 import Header from './components/Header';
 import ContactForm from './components/ContactForm';
 import ContactList from './components/ContactList';
 import ContactFilters from './components/ContactFilters';
+import StatsCards from './components/StatsCards';
+import Modal from './components/Modal';
 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Plus, Edit3, Users, Sparkles } from 'lucide-react';
 
 function App() {
   const appTitle = "Minha Agenda de Endereços";
@@ -16,13 +20,14 @@ function App() {
   const [contacts, setContacts] = useState([]);
   const [editingContactId, setEditingContactId] = useState(null);
   const [editingDisplayName, setEditingDisplayName] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [filters, setFilters] = useState({
     user: '',
     city: '',
     state: '',
   });
-  const [searchTerm, setSearchTerm] = useState(''); // Estado para o termo de busca
+  const [searchTerm, setSearchTerm] = useState('');
 
   // EFEITO PARA CARREGAR CONTATOS DO LOCALSTORAGE
   useEffect(() => {
@@ -62,7 +67,7 @@ function App() {
       isArchived: false, 
     };
     setContacts(prevContacts => [...prevContacts, contactWithId]);
-    toast.info("Novo contato adicionado!");
+    toast.success("Novo contato adicionado!");
   };
 
   const handleEditInitiate = (contactId) => {
@@ -117,7 +122,7 @@ function App() {
 
   const processedContacts = useMemo(() => {
     console.log("App.jsx: Recalculando processedContacts (contacts, filters, searchTerm)...");
-    let tempContacts = contacts.filter(contact => !contact.isArchived); // Exemplo, se tivéssemos isArchived
+    let tempContacts = contacts.filter(contact => !contact.isArchived);
 
     // Aplicar filtros estruturados
     if (filters.user) {
@@ -145,63 +150,160 @@ function App() {
     return tempContacts;
   }, [contacts, filters, searchTerm]);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0 }
+  };
 
   return (
-    <div>
+    <motion.div 
+      className="app-container"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       <Header title={appTitle} subtitle={appSubtitle} />
-      <main style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-        
+      
+      {/* Modal de Edição */}
+      <AnimatePresence>
         {editingContactId && (
-          <div style={{ 
-            padding: '20px', 
-            margin: '20px 0', 
-            border: '2px solid #007bff', 
-            borderRadius: '8px', 
-            backgroundColor: '#f8f9fa' 
-          }}>
-            <h3 style={{ marginTop: '0', color: '#007bff' }}>Editando Nome de Exibição</h3>
-            <label htmlFor="editingDisplayNameInput" style={{ display: 'block', marginBottom: '5px' }}>Novo nome:</label>
-            <input
-              type="text"
-              id="editingDisplayNameInput"
-              value={editingDisplayName}
-              onChange={(e) => setEditingDisplayName(e.target.value)}
-              style={{ marginRight: '10px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: 'calc(100% - 200px)' }}
-            />
-            <button 
-              onClick={handleEditSave} 
-              style={{ padding: '8px 15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-            >
-              Salvar
-            </button>
-            <button 
-              onClick={handleEditCancel} 
-              style={{ padding: '8px 15px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '5px' }}
-            >
-              Cancelar
-            </button>
-          </div>
+          <Modal
+            isOpen={true}
+            onClose={handleEditCancel}
+            title="Editar Nome de Exibição"
+          >
+            <div className="form-group">
+              <label htmlFor="editingDisplayNameInput" className="form-label">
+                Novo nome de exibição:
+              </label>
+              <input
+                type="text"
+                id="editingDisplayNameInput"
+                className="form-input"
+                value={editingDisplayName}
+                onChange={(e) => setEditingDisplayName(e.target.value)}
+                placeholder="Digite o novo nome"
+                autoFocus
+              />
+            </div>
+            
+            <div className="form-actions">
+              <button 
+                onClick={handleEditCancel} 
+                className="btn btn-secondary"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleEditSave} 
+                className="btn btn-primary"
+              >
+                <Edit3 size={16} />
+                Salvar
+              </button>
+            </div>
+          </Modal>
         )}
+      </AnimatePresence>
 
-        <ContactForm onAddContact={addContactHandler} />
-        
-        <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
+      {/* Modal do Formulário de Contato */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Adicionar Novo Contato"
+      >
+        <ContactForm 
+          onAddContact={addContactHandler}
+          onClose={() => setIsModalOpen(false)}
+        />
+      </Modal>
 
+      {/* Botão para Adicionar Contato */}
+      <motion.div 
+        variants={sectionVariants}
+        className="add-contact-section"
+      >
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="add-contact-btn"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <Plus size={20} className="btn-icon" />
+          Adicionar Novo Contato
+        </motion.button>
+      </motion.div>
+
+      {/* Estatísticas */}
+      <motion.div variants={sectionVariants}>
+        <StatsCards 
+          contacts={contacts} 
+          filteredContacts={processedContacts}
+        />
+      </motion.div>
+
+      {/* Filtros */}
+      <motion.div variants={sectionVariants}>
         <ContactFilters
           filterValues={filters}
           onFilterChange={handleFilterChange}
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
         />
+      </motion.div>
 
-        <h2 style={{ color: '#333', borderBottom: '2px solid #007bff', paddingBottom: '10px', marginTop: '30px' }}>
-          Meus Contatos {processedContacts.length !== contacts.length ? `(Exibindo ${processedContacts.length} de ${contacts.length})` : `(${contacts.length} no total)`}
-        </h2>
+      {/* Lista de Contatos */}
+      <motion.div variants={sectionVariants}>
+        <div className="section-header">
+          <h2>Meus Contatos</h2>
+          {processedContacts.length !== contacts.length && (
+            <div className="contacts-count">
+              {processedContacts.length} de {contacts.length}
+            </div>
+          )}
+        </div>
         
         {processedContacts.length === 0 ? (
-          <p style={{ fontStyle: 'italic', color: '#777' }}>
-            {contacts.length > 0 ? 'Nenhum contato corresponde aos filtros/busca atuais.' : 'Nenhum contato adicionado ainda.'}
-          </p>
+          <motion.div 
+            className="empty-state"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="empty-state-icon">
+              <Users size={64} />
+            </div>
+            <div className="empty-state-title">
+              {contacts.length > 0 ? 'Nenhum contato encontrado' : 'Nenhum contato adicionado'}
+            </div>
+            <div className="empty-state-description">
+              {contacts.length > 0 
+                ? 'Tente ajustar os filtros ou busca para encontrar seus contatos.'
+                : 'Comece adicionando seu primeiro contato clicando no botão acima.'
+              }
+            </div>
+            {contacts.length === 0 && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn btn-primary"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <Plus size={16} />
+                Adicionar Primeiro Contato
+              </motion.button>
+            )}
+          </motion.div>
         ) : (
           <ContactList
             contacts={processedContacts}
@@ -209,7 +311,9 @@ function App() {
             onDeleteContact={handleDeleteContact}
           />
         )}
-      </main>
+      </motion.div>
+
+      {/* Toast Container */}
       <ToastContainer
         position="top-right"
         autoClose={4000}
@@ -221,8 +325,12 @@ function App() {
         draggable
         pauseOnHover
         theme="light"
+        toastStyle={{
+          borderRadius: '12px',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+        }}
       />
-    </div>
+    </motion.div>
   );
 }
 

@@ -1,31 +1,36 @@
 // src/components/ContactList.jsx
 import React from 'react';
+import { motion } from 'framer-motion';
 import ContactItem from './ContactItem';
 
-const ContactList = ({ contacts, onEditContact, onDeleteContact }) => { // Adicionada a prop onDeleteContact
-  if (!contacts || contacts.length === 0) {
-    return null;
-  }
-
-  const listStyle = {
-    listStyleType: 'none',
-    padding: 0,
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '20px',
+const ContactList = ({ contacts, onEditContact, onDeleteContact }) => {
+  const listVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
   };
 
   return (
-    <ul style={listStyle}>
-      {contacts.map(contact => (
+    <motion.div
+      variants={listVariants}
+      initial="hidden"
+      animate="visible"
+      className="contact-list"
+    >
+      {contacts.map((contact, index) => (
         <ContactItem
           key={contact.id}
           contact={contact}
           onEdit={onEditContact}
-          onDelete={onDeleteContact} // Passando a função de exclusão para cada ContactItem
+          onDelete={onDeleteContact}
+          index={index}
         />
       ))}
-    </ul>
+    </motion.div>
   );
 };
 
