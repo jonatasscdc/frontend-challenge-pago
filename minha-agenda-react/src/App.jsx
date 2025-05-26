@@ -1,12 +1,11 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import './App.css'; // Estilos globais
+import './App.css';
 import Header from './components/Header';
 import ContactForm from './components/ContactForm';
 import ContactList from './components/ContactList';
 
-// Importações para react-toastify
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
@@ -14,6 +13,8 @@ function App() {
   const appSubtitle = "Gerencie seus contatos facilmente!";
 
   const [contacts, setContacts] = useState([]);
+  const [editingContactId, setEditingContactId] = useState(null);
+  const [editingDisplayName, setEditingDisplayName] = useState('');
 
   // EFEITO PARA CARREGAR CONTATOS DO LOCALSTORAGE
   useEffect(() => {
@@ -24,9 +25,7 @@ function App() {
         const parsedContacts = JSON.parse(storedContacts);
         if (Array.isArray(parsedContacts)) {
           setContacts(parsedContacts);
-          console.log("App.jsx: Contatos carregados do localStorage:", parsedContacts);
         } else {
-          console.warn("App.jsx: Dados do localStorage não são um array. Resetando.");
           localStorage.removeItem('contacts');
           setContacts([]);
         }
@@ -35,8 +34,6 @@ function App() {
         localStorage.removeItem('contacts');
         setContacts([]);
       }
-    } else {
-      console.log("App.jsx: Nenhum contato encontrado no localStorage.");
     }
   }, []);
 
@@ -45,10 +42,8 @@ function App() {
     console.log("App.jsx: Efeito de SALVAMENTO no localStorage executado. Contacts:", contacts);
     if (contacts && contacts.length > 0) {
       localStorage.setItem('contacts', JSON.stringify(contacts));
-      console.log("App.jsx: Contatos salvos no localStorage.");
     } else if (contacts && contacts.length === 0 && localStorage.getItem('contacts') !== null) {
       localStorage.removeItem('contacts');
-      console.log("App.jsx: Lista de contatos vazia, chave 'contacts' removida.");
     }
   }, [contacts]);
 
@@ -58,17 +53,90 @@ function App() {
       id: crypto.randomUUID(),
     };
     setContacts(prevContacts => [...prevContacts, contactWithId]);
-    // O toast de "contato adicionado" pode ser disparado aqui ou no ContactForm
-    // Por enquanto, focaremos nos toasts de busca de CEP conforme o desafio.
+    toast.info("Novo contato adicionado!");
+  };
+
+  const handleEditInitiate = (contactId) => {
+    const contactToEdit = contacts.find(contact => contact.id === contactId);
+    if (contactToEdit) {
+      setEditingContactId(contactId);
+      setEditingDisplayName(contactToEdit.displayName);
+      console.log("App.jsx: Iniciando edição do contato ID:", contactId);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingContactId(null);
+    setEditingDisplayName('');
+  };
+
+  const handleEditSave = () => {
+    if (!editingDisplayName.trim()) {
+      toast.error("O nome de exibição não pode ser vazio.");
+      return;
+    }
+    setContacts(prevContacts =>
+      prevContacts.map(contact =>
+        contact.id === editingContactId ? { ...contact, displayName: editingDisplayName.trim() } : contact
+      )
+    );
+    toast.success("Nome de exibição atualizado com sucesso!");
+    handleEditCancel();
+  };
+
+  const handleDeleteContact = (contactIdToDelete) => {
+    if (window.confirm("Tem certeza que deseja excluir este contato? Esta ação não pode ser desfeita.")) {
+      setContacts(prevContacts =>
+        prevContacts.filter(contact => contact.id !== contactIdToDelete)
+      );
+      toast.success("Contato excluído com sucesso!");
+      console.log("App.jsx: Contato ID excluído:", contactIdToDelete);
+      // Se o contato que estava sendo editado foi excluído, limpa o modo de edição
+      if (editingContactId === contactIdToDelete) {
+        handleEditCancel();
+      }
+    } else {
+      console.log("App.jsx: Exclusão cancelada pelo usuário para o contato ID:", contactIdToDelete);
+    }
   };
 
   return (
     <div>
-      <Header
-        title={appTitle}
-        subtitle={appSubtitle}
-      />
+      <Header title={appTitle} subtitle={appSubtitle} />
       <main style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+        
+        {editingContactId && (
+          <div style={{ 
+            padding: '20px', 
+            margin: '20px 0', 
+            border: '2px solid #007bff', 
+            borderRadius: '8px', 
+            backgroundColor: '#f8f9fa' 
+          }}>
+            <h3 style={{ marginTop: '0', color: '#007bff' }}>Editando Nome de Exibição</h3>
+            <label htmlFor="editingDisplayNameInput" style={{ display: 'block', marginBottom: '5px' }}>Novo nome:</label>
+            <input
+              type="text"
+              id="editingDisplayNameInput"
+              value={editingDisplayName}
+              onChange={(e) => setEditingDisplayName(e.target.value)}
+              style={{ marginRight: '10px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: 'calc(100% - 200px)' }} // Ajuste de largura
+            />
+            <button 
+              onClick={handleEditSave} 
+              style={{ padding: '8px 15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              Salvar
+            </button>
+            <button 
+              onClick={handleEditCancel} 
+              style={{ padding: '8px 15px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '5px' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+
         <ContactForm onAddContact={addContactHandler} />
         
         <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
@@ -79,12 +147,16 @@ function App() {
         {contacts && contacts.length === 0 ? (
           <p style={{ fontStyle: 'italic', color: '#777' }}>Nenhum contato adicionado ainda.</p>
         ) : (
-          <ContactList contacts={contacts} />
+          <ContactList
+            contacts={contacts}
+            onEditContact={handleEditInitiate}
+            onDeleteContact={handleDeleteContact} // Passando a função de exclusão
+          />
         )}
       </main>
       <ToastContainer
         position="top-right"
-        autoClose={5000} // Fecha automaticamente após 5 segundos
+        autoClose={4000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick
@@ -92,7 +164,7 @@ function App() {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="light" // Opções: "light", "dark", "colored"
+        theme="light"
       />
     </div>
   );
