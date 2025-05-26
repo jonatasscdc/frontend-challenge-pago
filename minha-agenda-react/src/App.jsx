@@ -1,9 +1,10 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './App.css';
 import Header from './components/Header';
 import ContactForm from './components/ContactForm';
 import ContactList from './components/ContactList';
+import ContactFilters from './components/ContactFilters';
 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -15,6 +16,13 @@ function App() {
   const [contacts, setContacts] = useState([]);
   const [editingContactId, setEditingContactId] = useState(null);
   const [editingDisplayName, setEditingDisplayName] = useState('');
+
+  const [filters, setFilters] = useState({
+    user: '',
+    city: '',
+    state: '',
+  });
+  const [searchTerm, setSearchTerm] = useState(''); // Estado para o termo de busca
 
   // EFEITO PARA CARREGAR CONTATOS DO LOCALSTORAGE
   useEffect(() => {
@@ -51,6 +59,7 @@ function App() {
     const contactWithId = {
       ...newContactData,
       id: crypto.randomUUID(),
+      isArchived: false, 
     };
     setContacts(prevContacts => [...prevContacts, contactWithId]);
     toast.info("Novo contato adicionado!");
@@ -61,7 +70,6 @@ function App() {
     if (contactToEdit) {
       setEditingContactId(contactId);
       setEditingDisplayName(contactToEdit.displayName);
-      console.log("App.jsx: Iniciando edição do contato ID:", contactId);
     }
   };
 
@@ -90,15 +98,53 @@ function App() {
         prevContacts.filter(contact => contact.id !== contactIdToDelete)
       );
       toast.success("Contato excluído com sucesso!");
-      console.log("App.jsx: Contato ID excluído:", contactIdToDelete);
-      // Se o contato que estava sendo editado foi excluído, limpa o modo de edição
       if (editingContactId === contactIdToDelete) {
         handleEditCancel();
       }
-    } else {
-      console.log("App.jsx: Exclusão cancelada pelo usuário para o contato ID:", contactIdToDelete);
     }
   };
+
+  const handleFilterChange = (filterName, filterValue) => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      [filterName]: filterValue,
+    }));
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const processedContacts = useMemo(() => {
+    console.log("App.jsx: Recalculando processedContacts (contacts, filters, searchTerm)...");
+    let tempContacts = contacts.filter(contact => !contact.isArchived); // Exemplo, se tivéssemos isArchived
+
+    // Aplicar filtros estruturados
+    if (filters.user) {
+      tempContacts = tempContacts.filter(contact =>
+        contact.userName.toLowerCase().includes(filters.user.toLowerCase())
+      );
+    }
+    if (filters.city) {
+      tempContacts = tempContacts.filter(contact =>
+        contact.city.toLowerCase().includes(filters.city.toLowerCase())
+      );
+    }
+    if (filters.state) {
+      tempContacts = tempContacts.filter(contact =>
+        contact.state.toLowerCase().includes(filters.state.toLowerCase())
+      );
+    }
+
+    // Aplicar termo de busca (no displayName)
+    if (searchTerm) {
+      tempContacts = tempContacts.filter(contact =>
+        contact.displayName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    return tempContacts;
+  }, [contacts, filters, searchTerm]);
+
 
   return (
     <div>
@@ -120,7 +166,7 @@ function App() {
               id="editingDisplayNameInput"
               value={editingDisplayName}
               onChange={(e) => setEditingDisplayName(e.target.value)}
-              style={{ marginRight: '10px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: 'calc(100% - 200px)' }} // Ajuste de largura
+              style={{ marginRight: '10px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: 'calc(100% - 200px)' }}
             />
             <button 
               onClick={handleEditSave} 
@@ -141,16 +187,26 @@ function App() {
         
         <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
 
-        <h2 style={{ color: '#333', borderBottom: '2px solid #007bff', paddingBottom: '10px' }}>
-          Meus Contatos
+        <ContactFilters
+          filterValues={filters}
+          onFilterChange={handleFilterChange}
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+        />
+
+        <h2 style={{ color: '#333', borderBottom: '2px solid #007bff', paddingBottom: '10px', marginTop: '30px' }}>
+          Meus Contatos {processedContacts.length !== contacts.length ? `(Exibindo ${processedContacts.length} de ${contacts.length})` : `(${contacts.length} no total)`}
         </h2>
-        {contacts && contacts.length === 0 ? (
-          <p style={{ fontStyle: 'italic', color: '#777' }}>Nenhum contato adicionado ainda.</p>
+        
+        {processedContacts.length === 0 ? (
+          <p style={{ fontStyle: 'italic', color: '#777' }}>
+            {contacts.length > 0 ? 'Nenhum contato corresponde aos filtros/busca atuais.' : 'Nenhum contato adicionado ainda.'}
+          </p>
         ) : (
           <ContactList
-            contacts={contacts}
+            contacts={processedContacts}
             onEditContact={handleEditInitiate}
-            onDeleteContact={handleDeleteContact} // Passando a função de exclusão
+            onDeleteContact={handleDeleteContact}
           />
         )}
       </main>
